@@ -1,62 +1,69 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
-using Color = System.Drawing.Color;
 
 namespace SomethingOP
 {
     internal class Program
     {
+        private static Vector3 pos;
+        private static bool lck;
         public static Menu menu;
         public static Spell Q;
         private static Obj_AI_Hero me;
 
         private static void Main(string[] args)
         {
-
-
-            Game.OnUpdate += firstUpdate;
-                CustomEvents.Game.OnGameLoad += GameOnOnGameLoad;
+            CustomEvents.Game.OnGameLoad += GameOnOnGameLoad;
         }
 
         private static void GameOnOnGameLoad(EventArgs args)
         {
+            me = ObjectManager.Player;
+            Q = new Spell(SpellSlot.Q);
+            Game.OnUpdate += onUpdate;
             menu = new Menu("Invisible spear", "NidaQ", true);
             menu.AddItem(new MenuItem("Q", "Throw invis spear").SetValue(new KeyBind('Z', KeyBindType.Press)));
-            menu.AddItem(new MenuItem("delayflat", "delay").SetValue(new Slider(0, -100)));
-            menu.AddItem(new MenuItem("delaymul", "delay multiplier*100").SetValue(new Slider(163, 100, 200)));
-            menu.AddItem(new MenuItem("debug", "Write last delay").SetValue(false));
+            menu.AddItem(new MenuItem("delayflat", "delay").SetValue(new Slider(120, 80, 200)));
+            menu.AddItem(new MenuItem("delaymul", "delay multiplier/100").SetValue(new Slider(110, 100, 150)));
+            menu.AddItem(new MenuItem("delayflat2", "time after spear becomes invisible").SetValue(new Slider(150, 110, 1200)));
+            menu.AddItem(new MenuItem("move", "move to cursorWIP").SetValue(new Slider(150, 110, 1200)));
+            menu.AddItem(new MenuItem("debug", "Write last delay(debug)").SetValue(false));
+            menu.AddItem(new MenuItem("", "Have fun! Written by Drake."));
             menu.AddToMainMenu();
         }
 
-        private static void firstUpdate(EventArgs args)
-        {
-            me = ObjectManager.Player;
-            Q = new Spell(SpellSlot.Q);
-            Game.OnUpdate -= firstUpdate;
-            Game.OnUpdate += onUpdate;
-        }
 
 
                     
 
         private static void onUpdate(EventArgs args)
         {
-            if (!menu.Item("Q").GetValue<KeyBind>().Active||!Q.IsReady()) return;
-            List<Obj_AI_Base> a=MinionManager.GetMinions(me.AttackRange);
-            if (a.Count > 0)
+            if (lck||!menu.Item("Q").GetValue<KeyBind>().Active||!Q.IsReady()) return;
+            IEnumerable<Obj_AI_Base> a = ObjectManager.Get<Obj_AI_Base>().Where(obj =>obj.IsValidTarget()&&me.Distance(obj)<me.AttackRange);
+            if (a.Any())
             {
-                int delay = (int)((me.AttackCastDelay + 1000 * me.Distance(a[0]) / me.BasicAttack.MissileSpeed) * (menu.Item("delaymul").GetValue<Slider>().Value / 100f) + menu.Item("delayflat").GetValue<Slider>().Value);
+                pos = Game.CursorPos;
+                lck = true;
+                int delay = (int)((me.AttackCastDelay + 1000 * me.Distance(a.First()) / me.BasicAttack.MissileSpeed) * (menu.Item("delaymul").GetValue<Slider>().Value / 100f) + menu.Item("delayflat").GetValue<Slider>().Value);
 
-                
-                me.IssueOrder(GameObjectOrder.AttackUnit, a[0]);
-                Utility.DelayAction.Add(delay, () => Q.Cast(Game.CursorPos));
+
+                me.IssueOrder(GameObjectOrder.AttackUnit, a.First());
+                Utility.DelayAction.Add(delay, castQ);
                 if (menu.Item("debug").GetValue<bool>())
                     Game.PrintChat(delay.ToString());
             }
             
+        }
+        private static void castQ()
+        {
+            Q.Cast(pos);
+            Utility.DelayAction.Add(menu.Item("delayflat2").GetValue<Slider>().Value, () => me.IssueOrder(GameObjectOrder.HoldPosition, me.ServerPosition));
+            lck = false;
+
         }
     }
 }
