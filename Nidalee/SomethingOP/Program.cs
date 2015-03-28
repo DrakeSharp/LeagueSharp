@@ -25,6 +25,9 @@ namespace SomethingOP
         {
             menu = new Menu("Invisible spear", "NidaQ", true);
             menu.AddItem(new MenuItem("Q", "Throw invis spear").SetValue(new KeyBind('Z', KeyBindType.Press)));
+            menu.AddItem(new MenuItem("delayflat", "delay").SetValue(new Slider(0, -100)));
+            menu.AddItem(new MenuItem("delaymul", "delay multiplier*100").SetValue(new Slider(163, 100, 200)));
+            menu.AddItem(new MenuItem("debug", "Write last delay").SetValue(false));
             menu.AddToMainMenu();
         }
 
@@ -37,6 +40,7 @@ namespace SomethingOP
         }
 
 
+                    
 
         private static void onUpdate(EventArgs args)
         {
@@ -44,10 +48,13 @@ namespace SomethingOP
             List<Obj_AI_Base> a=MinionManager.GetMinions(me.AttackRange);
             if (a.Count > 0)
             {
-                int delay = (int)((me.AttackCastDelay + 1000*me.Distance(a[0]) / me.BasicAttack.MissileSpeed)*1.5);
-                Game.PrintChat(delay.ToString());
+                int delay = (int)((me.AttackCastDelay + 1000 * me.Distance(a[0]) / me.BasicAttack.MissileSpeed) * (menu.Item("delaymul").GetValue<Slider>().Value / 100f) + menu.Item("delayflat").GetValue<Slider>().Value);
+
+                
                 me.IssueOrder(GameObjectOrder.AttackUnit, a[0]);
                 Utility.DelayAction.Add(delay, () => Q.Cast(Game.CursorPos));
+                if (menu.Item("debug").GetValue<bool>())
+                    Game.PrintChat(delay.ToString());
             }
             
         }
