@@ -23,7 +23,7 @@ namespace SomethingOP
         private static void GameOnOnGameLoad(EventArgs args)
         {
             me = ObjectManager.Player;
-            Q = new Spell(SpellSlot.Q);
+            Q = new Spell(SpellSlot.Q, 1500);
             Game.OnUpdate += onUpdate;
             menu = new Menu("Invisible spear", "NidaQ", true);
             menu.AddItem(new MenuItem("Q", "Throw invis spear").SetValue(new KeyBind('Z', KeyBindType.Press)));
@@ -32,6 +32,11 @@ namespace SomethingOP
             menu.AddItem(new MenuItem("delayflat2", "time after spear becomes invisible").SetValue(new Slider(150, 110, 1200)));
             menu.AddItem(new MenuItem("move", "don't stop after cast").SetValue(true));
             menu.AddItem(new MenuItem("draw", "draw attack range").SetValue(true));
+            menu.AddItem(new MenuItem("pred", "use prediction").SetValue(true));
+            menu.AddItem(new MenuItem("hc", "hitchance")).SetValue(new Slider(3, 1, 4));
+            Menu ts = new Menu("Target selector", "ts");
+            TargetSelector.AddToMenu(ts);
+            menu.AddSubMenu(ts);
             menu.AddItem(new MenuItem("debug", "Write last delay(debug)").SetValue(false));
             menu.AddItem(new MenuItem("", "Have fun! Written by Drake."));
             menu.AddToMainMenu();
@@ -60,10 +65,32 @@ namespace SomethingOP
 
         private static void castQ()
         {
-            Q.Cast(pos);
-            Utility.DelayAction.Add(menu.Item("delayflat2").GetValue<Slider>().Value, hold);
             lck = false;
+            if (!menu.Item("pred").GetValue<bool>())
+            {
+                Q.Cast(pos);
+                Utility.DelayAction.Add(menu.Item("delayflat2").GetValue<Slider>().Value, hold);
+            }
+            else
+            {
+                Obj_AI_Base target = TargetSelector.GetTarget(1400, TargetSelector.DamageType.Magical);
+                
+                if (target.IsValidTarget(Q.Range))
+                {
+                    
+                    //Obj_AI_Hero targetHero = TargetSelector.GetTargetNoCollision(Q);
+                    Game.PrintChat(target.Name);
+                    PredictionOutput prediction = Q.GetPrediction(target);
+                        if (prediction.Hitchance >= (HitChance) menu.Item("hc").GetValue<Slider>().Value)
+                        {
+                            Q.Cast(prediction.CastPosition);
+                            Utility.DelayAction.Add(menu.Item("delayflat2").GetValue<Slider>().Value, hold);
+                        }
+                    }
+            }
+            
         }
+
         private static void hold()
         {
             me.IssueOrder(GameObjectOrder.HoldPosition, me.ServerPosition);
