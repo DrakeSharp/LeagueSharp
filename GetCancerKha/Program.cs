@@ -45,7 +45,7 @@ namespace Template
         }
         static void Drawing_OnDraw(EventArgs args)
         {
-            if (ObjectManager.Player.Position.Distance(kappa) < 3000&&!ObjectManager.Player.IsDead||!kappa.IsOnScreen()) return;
+            if (ObjectManager.Player.Position.Distance(kappa) < 3000&&!ObjectManager.Player.IsDead) return;
             line(kappa - (kappa - ObjectManager.Player.Position) * (1000 / (kappa - ObjectManager.Player.Position).Length()), kappa, Color.Green);
             Render.Circle.DrawCircle(kappa, 1000, Color.Red);
             Render.Circle.DrawCircle(kappa, 10, Color.Red);
