@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Media;
 using System.Threading;
 using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
 using Color = System.Drawing.Color;
+using Drake.Properties;
 // ReSharper disable CompareOfFloatsByEqualityOperator
 
-namespace Anti_Camper
+namespace Drake
 {
     internal class Program
     {
@@ -20,18 +20,18 @@ namespace Anti_Camper
             public Obj_AI_Hero hero;
             public bool count;
         }
-
         static float lastbeep;
-        static int delay = 0;
+        static int delay;
         static float test;
         static MenuItem yy;
         static MenuItem xx;
         static MenuItem lb;
         static MenuItem sound;
+        static MenuItem debug;
         static int textx;
         static int texty;
-        static int duration = 0;
-        static int range = 0;
+        static int duration;
+        static int range;
         static danger dangers;
         static List<Obj_AI_Hero> heroes;
         static char x;
@@ -73,7 +73,9 @@ namespace Anti_Camper
             Menu.AddItem(yy);
             Menu.AddItem(xx);
             sound = new MenuItem("sound", "Play sound").SetValue(false);
+            debug = new MenuItem("debug", "Debug").SetValue(false);
             Menu.AddItem(sound);
+            Menu.AddItem(debug);
             lb.ValueChanged += Changed;
             xx.ValueChanged += Changed;
             yy.ValueChanged += Changed;
@@ -91,8 +93,8 @@ namespace Anti_Camper
                     myhero = hero;
             }
             x = myhero.Team == GameObjectTeam.Order ? 'O' : 'C';
-            Game.OnGameUpdate += OnUpdate;
-            Game.OnGameProcessPacket += OnProcessPacket;
+            Game.OnUpdate += OnUpdate;
+            Game.OnProcessPacket += OnProcessPacket;
             Drawing.OnDraw += OnDraw;
         }
         private static void Changed(object sender, OnValueChangeEventArgs e)
@@ -120,7 +122,8 @@ namespace Anti_Camper
                             s.time = Game.Time + duration;
                             s.hero = hero;
                             s.count = lastgain[i]/expectedgain[i]<.63f;
-                            Game.PrintChat(lastgain[i] +"  "+ expectedgain[i]);
+                            if (debug.GetValue<Boolean>())
+                                Game.PrintChat(lastgain[i] +"  "+ expectedgain[i]);
                             dangers = s;
                             miniondied[i].X = 0;
                         }
@@ -158,19 +161,21 @@ namespace Anti_Camper
             if ((int)(Game.Time * 2) % 2 == 1) Drawing.DrawText(textx, texty, Color.Red, g+"Enemy detected");
             Drawing.DrawCircle(dangers.pos, 1400, Color.Crimson);
             delay++;
-            if (delay == 10 && sound.GetValue<Boolean>() && lastbeep < Game.Time) ThreadPool.QueueUserWorkItem(ignoredState =>
-                {
-                    lastbeep = Game.Time + lb.GetValue<Slider>().Value;
-                    using (var player = new SoundPlayer(Path.Combine(Environment.GetFolderPath(
-                          Environment.SpecialFolder.ApplicationData), "LeagueSharp\\Repositories\\E0D6961C\\trunk\\Anti_Camper\\Resources\\b.wav")))
+
+                if (delay == 10 && sound.GetValue<Boolean>() && lastbeep < Game.Time)
+                    ThreadPool.QueueUserWorkItem(ignoredState =>
                     {
-                        player.PlaySync();
-                    }
-                });
+                        lastbeep = Game.Time + lb.GetValue<Slider>().Value;
+                        using (var player = new SoundPlayer(Resources.b))
+                        {
+                            player.PlaySync();
+                        }
+                    });
         }
         private static void OnProcessPacket(GamePacketEventArgs args)
         {
-            if (args.PacketData[0] != 34) return;
+            if (args.PacketData[0] != 207) return;
+
             int nId = BitConverter.ToInt32(args.PacketData, 2);
             foreach (Obj_AI_Minion min in minionz)
             {
@@ -181,7 +186,7 @@ namespace Anti_Camper
                 else if (min.BaseSkinName[15].Equals('M'))
                     xx = (float)58.88;
                 else if (min.BaseSkinName[15].Equals('S'))
-                    xx = (float)92;
+                    xx = 92;
 
                 short champcount = 0;
                 foreach (Obj_AI_Hero hero in heroes)
