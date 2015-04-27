@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Linq;
 using LeagueSharp;
 using LeagueSharp.Common;
 using SharpDX;
-using Drake;
-using Color = System.Drawing.Color;
 
 namespace Drake
 {
     internal class Program
     {
-        static Vector2 dr;
         private static float skillanglemax = .3f;
         private static float angleres = .2f;
         private static int distres = 5;
@@ -20,9 +16,10 @@ namespace Drake
         private static SpellSlot flashSlot;
         private static Spell flash;
         private static float angl;
+        private static float turnoff;
 
 
-        private static void Main(string[] args)
+        private static void Main()
         {
             CustomEvents.Game.OnGameLoad += GameOnOnGameLoad;
         }
@@ -30,15 +27,16 @@ namespace Drake
         private static void GameOnOnGameLoad(EventArgs args)
         {
             me = ObjectManager.Player;
-            flashSlot=me.GetSpellSlot("SummonerFlash");
-            
+            flashSlot = me.GetSpellSlot("SummonerFlash");
+
             menu = new Menu("Easy Flash", "ef", true);
-            if( flashSlot== SpellSlot.Unknown){
+            if (flashSlot == SpellSlot.Unknown)
+            {
                 menu.AddItem(new MenuItem("", "Flash not detected. Easy Flash is disabled."));
                 menu.AddToMainMenu();
                 return;
             }
-            flash=new Spell(flashSlot, 425);
+            flash = new Spell(flashSlot, 425);
             menu.AddItem(new MenuItem("bf", "Block failed flashes.").SetValue(true));
             menu.AddItem(new MenuItem("af", "Assisted flash.").SetValue(true));
             menu.AddItem(new MenuItem("fr", "Always flash on the max range.").SetValue(true));
@@ -54,35 +52,34 @@ namespace Drake
             Vector2 mypos = new Vector2(me.Position.X, me.Position.Y);
 
 
-            if (menu.Item("bf").GetValue<bool>() || menu.Item("af").GetValue<bool>())
-            {
-                Vector2 flashpos = new Vector2(me.Position.X, me.Position.Y - (menu.Item("range").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
+
+
+            Vector2 flashpos = new Vector2(me.Position.X, me.Position.Y - (menu.Item("range").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
 getAngleDegree(mypos, args.StartPosition.To2D()));
 
-                Vector2 nearestfree = nearestFree(flashpos);
-                dr = nearestfree;
-                if (nearestfree == flashpos || mypos.Distance(nearestfree) > mypos.Distance(flashpos))
-                {
-                    if (!menu.Item("fr").GetValue<bool>()) return;
-                    args.Process = false;
-                    me.Spellbook.CastSpell(flashSlot, new Vector2(me.Position.X, me.Position.Y - (500)).RotateAroundPoint(mypos,
-                        getAngleDegree(mypos, args.StartPosition.To2D())).To3D(), false);
-                }
-                else if (menu.Item("af").GetValue<bool>())
-                {
-                    angl = getAngleDegree(mypos, args.StartPosition.To2D());
-                    WallOut w = calcWall(mypos, angl);
-                    me.IssueOrder(GameObjectOrder.MoveTo, w.wallStart.To3D(), false);
-                    Game.OnUpdate += Game_OnUpdate;
-                    Obj_AI_Base.OnIssueOrder += Obj_AI_Base_OnIssueOrder;
-                    Utility.DelayAction.Add(4000, () => { Game.OnUpdate -= Game_OnUpdate; Obj_AI_Base.OnIssueOrder -= Obj_AI_Base_OnIssueOrder; });
-                    args.Process = false;
-                }
-                else
-                {
-                    args.Process = false;
-                }
+            Vector2 nearestfree = nearestFree(flashpos);
+            if (nearestfree == flashpos || mypos.Distance(nearestfree) > mypos.Distance(flashpos))
+            {
+                if (!menu.Item("fr").GetValue<bool>()) return;
+                args.Process = false;
+                me.Spellbook.CastSpell(flashSlot, new Vector2(me.Position.X, me.Position.Y - (500)).RotateAroundPoint(mypos,
+                    getAngleDegree(mypos, args.StartPosition.To2D())).To3D(), false);
             }
+            else if (menu.Item("af").GetValue<bool>())
+            {
+                angl = getAngleDegree(mypos, args.StartPosition.To2D());
+                WallOut w = calcWall(mypos, angl);
+                me.IssueOrder(GameObjectOrder.MoveTo, w.wallStart.To3D(), false);
+                Game.OnUpdate += Game_OnUpdate;
+                Obj_AI_Base.OnIssueOrder += Obj_AI_Base_OnIssueOrder;
+                turnoff = Game.ClockTime + 4;
+                args.Process = false;
+            }
+            else if (menu.Item("bf").GetValue<bool>())
+            {
+                args.Process = false;
+            }
+
 
 
 
@@ -96,12 +93,13 @@ getAngleDegree(mypos, args.StartPosition.To2D()));
 
         private static void Game_OnUpdate(EventArgs args)
         {
-
+            if (Game.ClockTime > turnoff)
+            {
+                Game.OnUpdate -= Game_OnUpdate; Obj_AI_Base.OnIssueOrder -= Obj_AI_Base_OnIssueOrder;
+            }
             longestJump(flash, me.Position.To2D(), angl);
             t++;
         }
-
-
 
         private static float getAngleDiff(float angle1, float angle2)
         {
@@ -116,14 +114,12 @@ getAngleDegree(mypos, args.StartPosition.To2D()));
             return (float)(Math.Atan2(origin.Y - target.Y, origin.X - target.X) + 1.57079633f);
         }
 
-
-
         private static void longestJump(Spell spell, Vector2 mypos, float angle)
         {
             float angleadd = angleres * (t % 9);
             while (true)
             {
-                
+
                 Vector2 DD = new Vector2(mypos.X, mypos.Y - (menu.Item("range").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
                     angle + angleadd);
                 Vector2 nDD = nearestFree(DD);
@@ -132,6 +128,7 @@ getAngleDegree(mypos, args.StartPosition.To2D()));
                 {
                     me.Spellbook.CastSpell(flashSlot, new Vector2(mypos.X, mypos.Y - 1000).RotateAroundPoint(mypos, angle + angleadd).To3D(), false);
                     Game.OnUpdate -= Game_OnUpdate;
+                    Obj_AI_Base.OnIssueOrder -= Obj_AI_Base_OnIssueOrder;
                     break;
                 }
 
@@ -143,6 +140,7 @@ getAngleDegree(mypos, args.StartPosition.To2D()));
                 {
                     me.Spellbook.CastSpell(flashSlot, new Vector2(mypos.X, mypos.Y - 1000).RotateAroundPoint(mypos, angle - angleadd).To3D(), false);
                     Game.OnUpdate -= Game_OnUpdate;
+                    Obj_AI_Base.OnIssueOrder -= Obj_AI_Base_OnIssueOrder;
                     break;
                 }
 
@@ -166,7 +164,7 @@ getAngleDegree(mypos, args.StartPosition.To2D()));
                 distance += 1f;
                 rotation = 0;
             }
-            
+
         }
 
         private static WallOut calcWall(Vector2 mypos, float angle)
