@@ -55,7 +55,7 @@ namespace Drake
 
 
             Vector2 flashpos = new Vector2(me.Position.X, me.Position.Y - (menu.Item("range").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
-getAngleDegree(mypos, args.StartPosition.To2D()));
+getAngleDegree(mypos, Game.CursorPos.To2D()));
 
             Vector2 nearestfree = nearestFree(flashpos);
             if (nearestfree == flashpos || mypos.Distance(nearestfree) > mypos.Distance(flashpos))
@@ -63,11 +63,11 @@ getAngleDegree(mypos, args.StartPosition.To2D()));
                 if (!menu.Item("fr").GetValue<bool>()) return;
                 args.Process = false;
                 me.Spellbook.CastSpell(flashSlot, new Vector2(me.Position.X, me.Position.Y - (500)).RotateAroundPoint(mypos,
-                    getAngleDegree(mypos, args.StartPosition.To2D())).To3D(), false);
+                    getAngleDegree(mypos, Game.CursorPos.To2D())).To3D(), false);
             }
             else if (menu.Item("af").GetValue<bool>())
             {
-                angl = getAngleDegree(mypos, args.StartPosition.To2D());
+                angl = getAngleDegree(mypos, Game.CursorPos.To2D());
                 WallOut w = calcWall(mypos, angl);
                 me.IssueOrder(GameObjectOrder.MoveTo, w.wallStart.To3D(), false);
                 Game.OnUpdate += Game_OnUpdate;
