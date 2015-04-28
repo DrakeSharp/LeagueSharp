@@ -9,7 +9,7 @@ namespace Drake
     {
         private static float skillanglemax = .3f;
         private static float angleres = .2f;
-        private static int distres = 5;
+        private static int distres = 1;
         private static int t;
         private static Menu menu;
         private static Obj_AI_Hero me;
@@ -40,7 +40,7 @@ namespace Drake
             menu.AddItem(new MenuItem("bf", "Block failed flashes.").SetValue(true));
             menu.AddItem(new MenuItem("af", "Assisted flash.").SetValue(true));
             menu.AddItem(new MenuItem("fr", "Always flash on the max range.").SetValue(true));
-            menu.AddItem(new MenuItem("range", "Flash range for calculations.").SetValue(new Slider(415, 390, 425)));
+            menu.AddItem(new MenuItem("range", "Flash range for calculations.").SetValue(new Slider(410, 390, 425)));
             menu.AddToMainMenu();
             Spellbook.OnCastSpell += Spellbook_OnCastSpell;
         }
@@ -64,6 +64,7 @@ getAngleDegree(mypos, Game.CursorPos.To2D()));
                 args.Process = false;
                 me.Spellbook.CastSpell(flashSlot, new Vector2(me.Position.X, me.Position.Y - (500)).RotateAroundPoint(mypos,
                     getAngleDegree(mypos, Game.CursorPos.To2D())).To3D(), false);
+                me.IssueOrder(GameObjectOrder.MoveTo, me.Position, false);
             }
             else if (menu.Item("af").GetValue<bool>())
             {
@@ -127,6 +128,7 @@ getAngleDegree(mypos, Game.CursorPos.To2D()));
                     mypos.Distance(DD) * 1.3f < mypos.Distance(nDD))
                 {
                     me.Spellbook.CastSpell(flashSlot, new Vector2(mypos.X, mypos.Y - 1000).RotateAroundPoint(mypos, angle + angleadd).To3D(), false);
+                    me.IssueOrder(GameObjectOrder.MoveTo, me.Position, false);
                     Game.OnUpdate -= Game_OnUpdate;
                     Obj_AI_Base.OnIssueOrder -= Obj_AI_Base_OnIssueOrder;
                     break;
@@ -139,6 +141,7 @@ getAngleDegree(mypos, Game.CursorPos.To2D()));
                     mypos.Distance(DD) * 1.3f < mypos.Distance(nDD))
                 {
                     me.Spellbook.CastSpell(flashSlot, new Vector2(mypos.X, mypos.Y - 1000).RotateAroundPoint(mypos, angle - angleadd).To3D(), false);
+                    me.IssueOrder(GameObjectOrder.MoveTo, me.Position, false);
                     Game.OnUpdate -= Game_OnUpdate;
                     Obj_AI_Base.OnIssueOrder -= Obj_AI_Base_OnIssueOrder;
                     break;
