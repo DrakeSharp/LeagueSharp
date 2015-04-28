@@ -40,7 +40,7 @@ namespace Drake
             menu.AddItem(new MenuItem("bf", "Block failed flashes.").SetValue(true));
             menu.AddItem(new MenuItem("af", "Assisted flash.").SetValue(true));
             menu.AddItem(new MenuItem("fr", "Always flash on the max range.").SetValue(true));
-            menu.AddItem(new MenuItem("range", "Flash range for calculations.").SetValue(new Slider(410, 390, 425)));
+            menu.AddItem(new MenuItem("rangeupdated", "Flash range for calculations.").SetValue(new Slider(410, 390, 425)));
             menu.AddToMainMenu();
             Spellbook.OnCastSpell += Spellbook_OnCastSpell;
         }
@@ -54,7 +54,7 @@ namespace Drake
 
 
 
-            Vector2 flashpos = new Vector2(me.Position.X, me.Position.Y - (menu.Item("range").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
+            Vector2 flashpos = new Vector2(me.Position.X, me.Position.Y - (menu.Item("rangeupdated").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
 getAngleDegree(mypos, Game.CursorPos.To2D()));
 
             Vector2 nearestfree = nearestFree(flashpos);
@@ -121,7 +121,7 @@ getAngleDegree(mypos, Game.CursorPos.To2D()));
             while (true)
             {
 
-                Vector2 DD = new Vector2(mypos.X, mypos.Y - (menu.Item("range").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
+                Vector2 DD = new Vector2(mypos.X, mypos.Y - (menu.Item("rangeupdated").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
                     angle + angleadd);
                 Vector2 nDD = nearestFree(DD);
                 if (getAngleDiff(getAngleDegree(mypos, nDD), angle) < .4f &&
@@ -134,7 +134,7 @@ getAngleDegree(mypos, Game.CursorPos.To2D()));
                     break;
                 }
 
-                DD = new Vector2(mypos.X, mypos.Y - (menu.Item("range").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
+                DD = new Vector2(mypos.X, mypos.Y - (menu.Item("rangeupdated").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
                     angle - angleadd);
                 nDD = nearestFree(DD);
                 if (getAngleDiff(getAngleDegree(mypos, nDD), angle) < .4f &&
