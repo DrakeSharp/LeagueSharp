@@ -50,7 +50,13 @@ namespace Drake
         {
             if (args.Slot != flashSlot) return;
             Vector2 mypos = new Vector2(me.Position.X, me.Position.Y);
-            Vector2 flashpos = Game.CursorPos.To2D();
+
+
+
+
+            Vector2 flashpos = new Vector2(me.Position.X, me.Position.Y - (menu.Item("range").GetValue<Slider>().Value)).RotateAroundPoint(mypos,
+getAngleDegree(mypos, args.StartPosition.To2D()));
+
             Vector2 nearestfree = nearestFree(flashpos);
             if (nearestfree == flashpos || mypos.Distance(nearestfree) > mypos.Distance(flashpos))
             {
